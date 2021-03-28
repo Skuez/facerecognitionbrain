@@ -85,7 +85,7 @@ export default function App() {
   }, [input]);
 
   const onButtonSubmit = () => {
-    fetch("http://localhost:3000/imageurl", {
+    fetch("https://shrouded-plateau-03776.herokuapp.com/imageurl", {
       method: "post",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -95,7 +95,7 @@ export default function App() {
       .then((res) => res.json())
       .then((response) => {
         if (response) {
-          fetch("http://localhost:3000/image", {
+          fetch("https://shrouded-plateau-03776.herokuapp.com/image", {
             method: "put",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
