@@ -1,4 +1,36 @@
-const Signin = ({ onRouteChange }) => {
+import React, { useState } from "react";
+
+function Signin({ onRouteChange, loadUser }) {
+  const [signInEmail, changeSignInEmail] = useState("");
+  const [signInPassword, changeSignInPassword] = useState("");
+
+  const onEmailChange = (event) => {
+    changeSignInEmail(event.target.value);
+  };
+
+  const onPasswordChange = (event) => {
+    changeSignInPassword(event.target.value);
+  };
+
+  const onSubmitSignIn = () => {
+    const credentials = {
+      email: signInEmail,
+      password: signInPassword,
+    };
+    fetch("http://localhost:3000/signin", {
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+    })
+      .then((response) => response.json())
+      .then((user) => {
+        if (user.id) {
+          loadUser(user);
+          onRouteChange("home");
+        }
+      });
+  };
+
   return (
     <article
       style={{ animation: "showSection 1s" }}
@@ -13,6 +45,7 @@ const Signin = ({ onRouteChange }) => {
                 Email
               </label>
               <input
+                onChange={onEmailChange}
                 className="pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
                 type="email"
                 name="email-address"
@@ -24,6 +57,7 @@ const Signin = ({ onRouteChange }) => {
                 Password
               </label>
               <input
+                onChange={onPasswordChange}
                 className="b pa2 input-reset ba bg-transparent hover-bg-black hover-white w-100"
                 type="password"
                 name="password"
@@ -33,7 +67,7 @@ const Signin = ({ onRouteChange }) => {
           </fieldset>
           <div className="">
             <input
-              onClick={() => onRouteChange("home")}
+              onClick={onSubmitSignIn}
               className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
               type="submit"
               value="Sign in"
@@ -51,6 +85,6 @@ const Signin = ({ onRouteChange }) => {
       </main>
     </article>
   );
-};
+}
 
 export default Signin;

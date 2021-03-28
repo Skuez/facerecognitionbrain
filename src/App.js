@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import Particles from "react-particles-js";
-import Clarifai from "clarifai";
 import Container from "./components/Container/Container";
 import FaceRecognition from "./components/FaceRecognition/FaceRecognition";
 import Navigation from "./components/Navigation/Navigation";
@@ -10,10 +9,6 @@ import Register from "./components/Register/Register";
 import Logo from "./components/Logo/Logo";
 import ImageLinkForm from "./components/ImageLinkForm/ImageLinkForm";
 import Rank from "./components/Rank/Rank";
-
-const app = new Clarifai.App({
-  apiKey: "094cb729655f4314b15eff02916dd7ab",
-});
 
 const particlesOptions = {
   particles: {
@@ -27,15 +22,42 @@ const particlesOptions = {
   },
 };
 
+const initialState = {
+  input: "",
+  imageUrl: "",
+  box: {},
+  route: "signin",
+  isSignedIn: false,
+  user: {
+    id: "",
+    name: "",
+    email: "",
+    entries: 0,
+    joined: "",
+  },
+};
+
 export default function App() {
-  const [input, changeInput] = useState("");
-  const [imageUrl, changeImageUrl] = useState("");
-  const [box, changeBox] = useState({});
-  const [route, changeRoute] = useState("signin");
-  const [isSignedIn, changeIsSignedIn] = useState(false);
+  const [input, changeInput] = useState(initialState.input);
+  const [imageUrl, changeImageUrl] = useState(initialState.imageUrl);
+  const [box, changeBox] = useState(initialState.box);
+  const [route, changeRoute] = useState(initialState.route);
+  const [isSignedIn, changeIsSignedIn] = useState(initialState.isSignedIn);
+  const [user, changeUser] = useState(initialState.user);
+
+  const loadUser = (user) => {
+    changeUser({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      entries: user.entries,
+      joined: user.joined,
+    });
+  };
 
   const onInputChange = (event) => {
     changeInput(event.target.value);
+    /* console.log(user); */
   };
 
   const calculateFaceLocation = (data) => {
@@ -63,15 +85,43 @@ export default function App() {
   }, [input]);
 
   const onButtonSubmit = () => {
-    app.models
-      .predict(Clarifai.FACE_DETECT_MODEL, imageUrl)
-      .then((response) => displayFaceBox(calculateFaceLocation(response)))
+    fetch("http://localhost:3000/imageurl", {
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: imageUrl,
+      }),
+    })
+      .then((res) => res.json())
+      .then((response) => {
+        if (response) {
+          fetch("http://localhost:3000/image", {
+            method: "put",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: user.id,
+            }),
+          })
+            .then((response) => response.json())
+            .then((count) => {
+              /* console.log(count); */
+              changeUser({ ...user, entries: count });
+            })
+            .catch(console.log);
+        }
+        displayFaceBox(calculateFaceLocation(response));
+      })
       .catch((err) => console.log(err));
   };
 
   const onRouteChange = (route) => {
     if (route === "signout") {
-      changeIsSignedIn(false);
+      changeInput(initialState.input);
+      changeImageUrl(initialState.imageUrl);
+      changeBox(initialState.box);
+      changeRoute(initialState.route);
+      changeIsSignedIn(initialState.isSignedIn);
+      changeUser(initialState.user);
     } else if (route === "home") {
       changeIsSignedIn(true);
     }
@@ -85,7 +135,7 @@ export default function App() {
       <Logo />
       {route === "home" ? (
         <div>
-          <Rank />
+          <Rank name={user.name} entries={user.entries} />
           <ImageLinkForm
             onInputChange={onInputChange}
             onButtonSubmit={onButtonSubmit}
@@ -93,9 +143,9 @@ export default function App() {
           <FaceRecognition box={box} imageUrl={imageUrl} />
         </div>
       ) : route === "signin" ? (
-        <Signin onRouteChange={onRouteChange} />
+        <Signin onRouteChange={onRouteChange} loadUser={loadUser} />
       ) : (
-        <Register onRouteChange={onRouteChange} />
+        <Register onRouteChange={onRouteChange} loadUser={loadUser} />
       )}
     </Container>
   );
